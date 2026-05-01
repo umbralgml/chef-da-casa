@@ -13,12 +13,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CookingStyleButton } from '@/components/CookingStyleButton';
 import { IngredientTag } from '@/components/IngredientTag';
 import { COOKING_STYLES, type CookingStyleId } from '@/constants';
+import { getProviderName } from '@/services/ai/recipeService';
 import { useAppStore } from '@/store/useAppStore';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { ingredients, selectedStyle, addIngredient, removeIngredient, setSelectedStyle } = useAppStore();
+  const { ingredients, selectedStyle, addIngredient, removeIngredient, setSelectedStyle, setRecipes } = useAppStore();
   const [inputText, setInputText] = useState('');
+
+  const providerName = getProviderName();
+  const isDemo = providerName === 'Mock (Dev)';
 
   function handleAddIngredient() {
     const trimmed = inputText.trim();
@@ -30,31 +34,45 @@ export default function HomeScreen() {
 
   function handleGenerate() {
     if (ingredients.length === 0 || !selectedStyle) return;
+    setRecipes([]);
     router.push('/recipes');
   }
 
   const canGenerate = ingredients.length > 0 && selectedStyle !== null;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#F9F5F0' }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#F9F5F0' }} edges={['bottom']}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
-          contentContainerStyle={{ padding: 24, paddingBottom: 40 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <View style={{ marginBottom: 32 }}>
-            <Text style={{ fontSize: 36, fontWeight: '800', color: '#1A1A1A', letterSpacing: -0.5 }}>
-              Chef de Casa
-            </Text>
-            <Text style={{ fontSize: 16, color: '#6B6B6B', marginTop: 4 }}>
-              O que tem na sua despensa hoje?
-            </Text>
-          </View>
+          {/* AI provider badge */}
+          {isDemo && (
+            <Pressable
+              onPress={() => router.push('/settings')}
+              style={({ pressed }) => ({
+                backgroundColor: '#FFF3EE',
+                borderColor: '#E8622A',
+                borderWidth: 1,
+                borderRadius: 10,
+                paddingVertical: 8,
+                paddingHorizontal: 12,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                marginBottom: 20,
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <Text style={{ fontSize: 14 }}>🧪</Text>
+              <Text style={{ fontSize: 13, color: '#E8622A', fontWeight: '600', flex: 1 }}>
+                Modo demonstração — configure sua chave Gemini para receitas reais
+              </Text>
+              <Text style={{ fontSize: 13, color: '#E8622A' }}>→</Text>
+            </Pressable>
+          )}
 
           {/* Ingredient Input */}
           <View style={{ marginBottom: 24 }}>
@@ -99,22 +117,17 @@ export default function HomeScreen() {
             {ingredients.length > 0 && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 12 }}>
                 {ingredients.map((ing) => (
-                  <IngredientTag
-                    key={ing}
-                    label={ing}
-                    onRemove={() => removeIngredient(ing)}
-                  />
+                  <IngredientTag key={ing} label={ing} onRemove={() => removeIngredient(ing)} />
                 ))}
               </View>
             )}
           </View>
 
           {/* Cooking Style */}
-          <View style={{ marginBottom: 32 }}>
+          <View style={{ marginBottom: 28 }}>
             <Text style={{ fontSize: 15, fontWeight: '600', color: '#1A1A1A', marginBottom: 12 }}>
               Que tipo de receita você quer?
             </Text>
-
             {COOKING_STYLES.map((style) => (
               <CookingStyleButton
                 key={style.id}

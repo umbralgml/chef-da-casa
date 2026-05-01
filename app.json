@@ -27,7 +27,13 @@
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Chef de Casa",
+      "shortName": "Chef",
+      "description": "Gere receitas com os ingredientes que você tem em casa usando IA",
+      "themeColor": "#E8622A",
+      "backgroundColor": "#F9F5F0",
+      "lang": "pt-BR"
     },
     "scheme": "chefdacasa",
     "plugins": [

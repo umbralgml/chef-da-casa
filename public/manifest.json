@@ -1,0 +1,25 @@
+{
+  "name": "Chef de Casa",
+  "short_name": "Chef de Casa",
+  "description": "Gere receitas com os ingredientes que você tem em casa usando IA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F9F5F0",
+  "theme_color": "#E8622A",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/assets/icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/favicon.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["food", "lifestyle", "utilities"],
+  "lang": "pt-BR"
+}

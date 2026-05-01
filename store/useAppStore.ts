@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { CookingStyleId } from '@/constants';
 import type { Recipe } from '@/services/ai/types';
+import { setGeminiKey } from '@/services/ai/recipeService';
 
 interface AppState {
   ingredients: string[];
@@ -9,6 +10,7 @@ interface AppState {
   selectedRecipe: Recipe | null;
   isLoading: boolean;
   error: string | null;
+  geminiKey: string;
 
   setIngredients: (ingredients: string[]) => void;
   addIngredient: (ingredient: string) => void;
@@ -18,8 +20,20 @@ interface AppState {
   setSelectedRecipe: (recipe: Recipe | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  saveGeminiKey: (key: string) => void;
   reset: () => void;
 }
+
+function loadStoredKey(): string {
+  try {
+    return (typeof localStorage !== 'undefined' && localStorage.getItem('gemini_key')) || '';
+  } catch {
+    return '';
+  }
+}
+
+const storedKey = loadStoredKey();
+if (storedKey) setGeminiKey(storedKey);
 
 const initialState = {
   ingredients: [],
@@ -28,6 +42,7 @@ const initialState = {
   selectedRecipe: null,
   isLoading: false,
   error: null,
+  geminiKey: storedKey,
 };
 
 export const useAppStore = create<AppState>((set) => ({
@@ -48,14 +63,20 @@ export const useAppStore = create<AppState>((set) => ({
     })),
 
   setSelectedStyle: (style) => set({ selectedStyle: style }),
-
   setRecipes: (recipes) => set({ recipes }),
-
   setSelectedRecipe: (recipe) => set({ selectedRecipe: recipe }),
-
   setLoading: (isLoading) => set({ isLoading }),
-
   setError: (error) => set({ error }),
 
-  reset: () => set(initialState),
+  saveGeminiKey: (key) => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        key ? localStorage.setItem('gemini_key', key) : localStorage.removeItem('gemini_key');
+      }
+    } catch {}
+    setGeminiKey(key);
+    set({ geminiKey: key, recipes: [] });
+  },
+
+  reset: () => set({ ...initialState, geminiKey: loadStoredKey() }),
 }));
