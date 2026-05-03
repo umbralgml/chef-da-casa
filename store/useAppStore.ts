@@ -15,6 +15,7 @@ interface AppState {
   setIngredients: (ingredients: string[]) => void;
   addIngredient: (ingredient: string) => void;
   removeIngredient: (ingredient: string) => void;
+  clearIngredients: () => void;
   setSelectedStyle: (style: CookingStyleId) => void;
   setRecipes: (recipes: Recipe[]) => void;
   setSelectedRecipe: (recipe: Recipe | null) => void;
@@ -24,7 +25,7 @@ interface AppState {
   reset: () => void;
 }
 
-function loadStoredKey(): string {
+function readStoredKey(): string {
   try {
     return (typeof localStorage !== 'undefined' && localStorage.getItem('gemini_key')) || '';
   } catch {
@@ -32,51 +33,55 @@ function loadStoredKey(): string {
   }
 }
 
-const storedKey = loadStoredKey();
-if (storedKey) setGeminiKey(storedKey);
+export const useAppStore = create<AppState>((set) => {
+  // Init provider from localStorage on first store creation (runs in browser, after hydration).
+  const storedKey = readStoredKey();
+  if (storedKey) setGeminiKey(storedKey);
 
-const initialState = {
-  ingredients: [],
-  selectedStyle: null,
-  recipes: [],
-  selectedRecipe: null,
-  isLoading: false,
-  error: null,
-  geminiKey: storedKey,
-};
+  return {
+    ingredients: [],
+    selectedStyle: null,
+    recipes: [],
+    selectedRecipe: null,
+    isLoading: false,
+    error: null,
+    geminiKey: storedKey,
 
-export const useAppStore = create<AppState>((set) => ({
-  ...initialState,
+    setIngredients: (ingredients) => set({ ingredients }),
 
-  setIngredients: (ingredients) => set({ ingredients }),
+    addIngredient: (ingredient) =>
+      set((state) => {
+        const normalized = ingredient.trim().toLowerCase();
+        if (!normalized || state.ingredients.includes(normalized)) return state;
+        return { ingredients: [...state.ingredients, normalized] };
+      }),
 
-  addIngredient: (ingredient) =>
-    set((state) => ({
-      ingredients: state.ingredients.includes(ingredient.trim().toLowerCase())
-        ? state.ingredients
-        : [...state.ingredients, ingredient.trim().toLowerCase()],
-    })),
+    removeIngredient: (ingredient) =>
+      set((state) => ({ ingredients: state.ingredients.filter((i) => i !== ingredient) })),
 
-  removeIngredient: (ingredient) =>
-    set((state) => ({
-      ingredients: state.ingredients.filter((i) => i !== ingredient),
-    })),
+    clearIngredients: () => set({ ingredients: [] }),
 
-  setSelectedStyle: (style) => set({ selectedStyle: style }),
-  setRecipes: (recipes) => set({ recipes }),
-  setSelectedRecipe: (recipe) => set({ selectedRecipe: recipe }),
-  setLoading: (isLoading) => set({ isLoading }),
-  setError: (error) => set({ error }),
+    setSelectedStyle: (style) => set({ selectedStyle: style }),
+    setRecipes: (recipes) => set({ recipes }),
+    setSelectedRecipe: (recipe) => set({ selectedRecipe: recipe }),
+    setLoading: (isLoading) => set({ isLoading }),
+    setError: (error) => set({ error }),
 
-  saveGeminiKey: (key) => {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        key ? localStorage.setItem('gemini_key', key) : localStorage.removeItem('gemini_key');
-      }
-    } catch {}
-    setGeminiKey(key);
-    set({ geminiKey: key, recipes: [] });
-  },
+    saveGeminiKey: (key) => {
+      const trimmed = key.trim();
+      try {
+        if (typeof localStorage !== 'undefined') {
+          trimmed ? localStorage.setItem('gemini_key', trimmed) : localStorage.removeItem('gemini_key');
+        }
+      } catch {}
+      setGeminiKey(trimmed);
+      set({ geminiKey: trimmed, recipes: [] });
+    },
 
-  reset: () => set({ ...initialState, geminiKey: loadStoredKey() }),
-}));
+    reset: () => {
+      const key = readStoredKey();
+      if (key) setGeminiKey(key);
+      set({ ingredients: [], selectedStyle: null, recipes: [], selectedRecipe: null, isLoading: false, error: null, geminiKey: key });
+    },
+  };
+});

@@ -18,22 +18,28 @@ import { useAppStore } from '@/store/useAppStore';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { ingredients, selectedStyle, addIngredient, removeIngredient, setSelectedStyle, setRecipes } = useAppStore();
-  const [inputText, setInputText] = useState('');
+  const {
+    ingredients,
+    selectedStyle,
+    addIngredient,
+    removeIngredient,
+    clearIngredients,
+    setSelectedStyle,
+    setRecipes,
+  } = useAppStore();
 
-  const providerName = getProviderName();
-  const isDemo = providerName === 'Mock (Dev)';
+  const [inputText, setInputText] = useState('');
+  const isDemo = getProviderName() === 'Mock (Dev)';
 
   function handleAddIngredient() {
     const trimmed = inputText.trim();
-    if (trimmed.length > 0) {
-      addIngredient(trimmed);
-      setInputText('');
-    }
+    if (!trimmed) return;
+    addIngredient(trimmed);
+    setInputText('');
   }
 
   function handleGenerate() {
-    if (ingredients.length === 0 || !selectedStyle) return;
+    if (!canGenerate) return;
     setRecipes([]);
     router.push('/recipes');
   }
@@ -48,37 +54,43 @@ export default function HomeScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* AI provider badge */}
+          {/* Badge modo demo */}
           {isDemo && (
             <Pressable
               onPress={() => router.push('/settings')}
               style={({ pressed }) => ({
                 backgroundColor: '#FFF3EE',
-                borderColor: '#E8622A',
+                borderColor: '#F4A261',
                 borderWidth: 1,
                 borderRadius: 10,
-                paddingVertical: 8,
-                paddingHorizontal: 12,
+                paddingVertical: 9,
+                paddingHorizontal: 14,
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 6,
-                marginBottom: 20,
+                marginBottom: 18,
                 opacity: pressed ? 0.8 : 1,
               })}
             >
-              <Text style={{ fontSize: 14 }}>🧪</Text>
-              <Text style={{ fontSize: 13, color: '#E8622A', fontWeight: '600', flex: 1 }}>
-                Modo demonstração — configure sua chave Gemini para receitas reais
+              <Text style={{ fontSize: 15, marginRight: 8 }}>🧪</Text>
+              <Text style={{ fontSize: 13, color: '#B55A1C', fontWeight: '600', flex: 1 }}>
+                Modo demo — configure o Gemini para receitas reais
               </Text>
-              <Text style={{ fontSize: 13, color: '#E8622A' }}>→</Text>
+              <Text style={{ fontSize: 14, color: '#B55A1C', fontWeight: '700' }}>→</Text>
             </Pressable>
           )}
 
-          {/* Ingredient Input */}
+          {/* Ingredientes */}
           <View style={{ marginBottom: 24 }}>
-            <Text style={{ fontSize: 15, fontWeight: '600', color: '#1A1A1A', marginBottom: 10 }}>
-              Ingredientes disponíveis
-            </Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#1A1A1A' }}>
+                Ingredientes disponíveis
+              </Text>
+              {ingredients.length > 0 && (
+                <Pressable onPress={clearIngredients} hitSlop={8}>
+                  <Text style={{ fontSize: 13, color: '#E8622A', fontWeight: '600' }}>Limpar tudo</Text>
+                </Pressable>
+              )}
+            </View>
 
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TextInput
@@ -123,7 +135,7 @@ export default function HomeScreen() {
             )}
           </View>
 
-          {/* Cooking Style */}
+          {/* Estilo culinário */}
           <View style={{ marginBottom: 28 }}>
             <Text style={{ fontSize: 15, fontWeight: '600', color: '#1A1A1A', marginBottom: 12 }}>
               Que tipo de receita você quer?
@@ -141,7 +153,7 @@ export default function HomeScreen() {
             ))}
           </View>
 
-          {/* Generate Button */}
+          {/* Botão gerar */}
           <Pressable
             onPress={handleGenerate}
             disabled={!canGenerate}
@@ -153,12 +165,12 @@ export default function HomeScreen() {
               opacity: pressed ? 0.85 : 1,
               shadowColor: canGenerate ? '#E8622A' : 'transparent',
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
+              shadowOpacity: 0.28,
               shadowRadius: 10,
               elevation: canGenerate ? 5 : 0,
             })}
           >
-            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700', letterSpacing: 0.3 }}>
+            <Text style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '700', letterSpacing: 0.3 }}>
               {canGenerate ? 'Gerar Receitas 🍳' : 'Adicione ingredientes e escolha um estilo'}
             </Text>
           </Pressable>

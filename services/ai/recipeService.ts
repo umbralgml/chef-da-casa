@@ -2,27 +2,34 @@ import { GeminiProvider } from './providers/gemini';
 import { MockAIProvider } from './providers/mock';
 import type { AIProvider, Recipe, RecipeRequest } from './types';
 
-function buildProvider(geminiKey?: string): AIProvider {
-  const key = geminiKey || process.env.EXPO_PUBLIC_GEMINI_KEY;
-  if (key) return new GeminiProvider(key);
-  return new MockAIProvider();
+// Lazy init: provider is built on first use, so localStorage has time to load.
+let activeProvider: AIProvider | null = null;
+
+function getProvider(): AIProvider {
+  if (!activeProvider) {
+    const key = process.env.EXPO_PUBLIC_GEMINI_KEY ?? '';
+    activeProvider = key ? new GeminiProvider(key) : new MockAIProvider();
+  }
+  return activeProvider;
 }
 
-let activeProvider: AIProvider = buildProvider();
-
 export function setGeminiKey(key: string): void {
-  activeProvider = key ? new GeminiProvider(key) : new MockAIProvider();
+  activeProvider = key.trim() ? new GeminiProvider(key.trim()) : new MockAIProvider();
 }
 
 export function getProviderName(): string {
-  return activeProvider.name;
+  return getProvider().name;
+}
+
+export async function testGeminiKey(key: string): Promise<void> {
+  await new GeminiProvider(key.trim()).testConnection();
 }
 
 export async function generateRecipes(request: RecipeRequest): Promise<Recipe[]> {
   if (request.ingredients.length === 0) {
     throw new Error('Adicione pelo menos um ingrediente.');
   }
-  return activeProvider.generateRecipes(request);
+  return getProvider().generateRecipes(request);
 }
 
 export type { Recipe, RecipeRequest };
