@@ -1,9 +1,16 @@
 import { Stack, useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import { Pressable, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useAppStore } from '@/store/useAppStore';
 
 export default function RootLayout() {
   const router = useRouter();
+  const initStorage = useAppStore((s) => s.initStorage);
+
+  useEffect(() => {
+    initStorage();
+  }, []);
 
   return (
     <>

@@ -45,16 +45,16 @@ export default function SettingsScreen() {
     }
   }
 
-  function handleSave() {
-    saveGeminiKey(inputKey);
+  async function handleSave() {
+    await saveGeminiKey(inputKey);
     setSaved(true);
     setTestState('idle');
     setTimeout(() => setSaved(false), 2500);
   }
 
-  function handleRemove() {
+  async function handleRemove() {
     setInputKey('');
-    saveGeminiKey('');
+    await saveGeminiKey('');
     setTestState('idle');
     setTestMessage('');
     setSaved(false);

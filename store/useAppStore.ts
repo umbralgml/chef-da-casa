@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { CookingStyleId } from '@/constants';
 import type { Recipe } from '@/services/ai/types';
 import { setGeminiKey } from '@/services/ai/recipeService';
+import { readKey, writeKey } from './storage';
 
 interface AppState {
   ingredients: string[];
@@ -11,6 +12,7 @@ interface AppState {
   isLoading: boolean;
   error: string | null;
   geminiKey: string;
+  storageReady: boolean;
 
   setIngredients: (ingredients: string[]) => void;
   addIngredient: (ingredient: string) => void;
@@ -21,67 +23,56 @@ interface AppState {
   setSelectedRecipe: (recipe: Recipe | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  saveGeminiKey: (key: string) => void;
+  saveGeminiKey: (key: string) => Promise<void>;
+  initStorage: () => Promise<void>;
   reset: () => void;
 }
 
-function readStoredKey(): string {
-  try {
-    return (typeof localStorage !== 'undefined' && localStorage.getItem('gemini_key')) || '';
-  } catch {
-    return '';
-  }
-}
+export const useAppStore = create<AppState>((set, get) => ({
+  ingredients: [],
+  selectedStyle: null,
+  recipes: [],
+  selectedRecipe: null,
+  isLoading: false,
+  error: null,
+  geminiKey: '',
+  storageReady: false,
 
-export const useAppStore = create<AppState>((set) => {
-  // Init provider from localStorage on first store creation (runs in browser, after hydration).
-  const storedKey = readStoredKey();
-  if (storedKey) setGeminiKey(storedKey);
+  initStorage: async () => {
+    const key = await readKey();
+    if (key) setGeminiKey(key);
+    set({ geminiKey: key, storageReady: true });
+  },
 
-  return {
-    ingredients: [],
-    selectedStyle: null,
-    recipes: [],
-    selectedRecipe: null,
-    isLoading: false,
-    error: null,
-    geminiKey: storedKey,
+  setIngredients: (ingredients) => set({ ingredients }),
 
-    setIngredients: (ingredients) => set({ ingredients }),
+  addIngredient: (ingredient) =>
+    set((state) => {
+      const normalized = ingredient.trim().toLowerCase();
+      if (!normalized || state.ingredients.includes(normalized)) return state;
+      return { ingredients: [...state.ingredients, normalized] };
+    }),
 
-    addIngredient: (ingredient) =>
-      set((state) => {
-        const normalized = ingredient.trim().toLowerCase();
-        if (!normalized || state.ingredients.includes(normalized)) return state;
-        return { ingredients: [...state.ingredients, normalized] };
-      }),
+  removeIngredient: (ingredient) =>
+    set((state) => ({ ingredients: state.ingredients.filter((i) => i !== ingredient) })),
 
-    removeIngredient: (ingredient) =>
-      set((state) => ({ ingredients: state.ingredients.filter((i) => i !== ingredient) })),
+  clearIngredients: () => set({ ingredients: [] }),
 
-    clearIngredients: () => set({ ingredients: [] }),
+  setSelectedStyle: (style) => set({ selectedStyle: style }),
+  setRecipes: (recipes) => set({ recipes }),
+  setSelectedRecipe: (recipe) => set({ selectedRecipe: recipe }),
+  setLoading: (isLoading) => set({ isLoading }),
+  setError: (error) => set({ error }),
 
-    setSelectedStyle: (style) => set({ selectedStyle: style }),
-    setRecipes: (recipes) => set({ recipes }),
-    setSelectedRecipe: (recipe) => set({ selectedRecipe: recipe }),
-    setLoading: (isLoading) => set({ isLoading }),
-    setError: (error) => set({ error }),
+  saveGeminiKey: async (key) => {
+    const trimmed = key.trim();
+    await writeKey(trimmed);
+    setGeminiKey(trimmed);
+    set({ geminiKey: trimmed, recipes: [] });
+  },
 
-    saveGeminiKey: (key) => {
-      const trimmed = key.trim();
-      try {
-        if (typeof localStorage !== 'undefined') {
-          trimmed ? localStorage.setItem('gemini_key', trimmed) : localStorage.removeItem('gemini_key');
-        }
-      } catch {}
-      setGeminiKey(trimmed);
-      set({ geminiKey: trimmed, recipes: [] });
-    },
-
-    reset: () => {
-      const key = readStoredKey();
-      if (key) setGeminiKey(key);
-      set({ ingredients: [], selectedStyle: null, recipes: [], selectedRecipe: null, isLoading: false, error: null, geminiKey: key });
-    },
-  };
-});
+  reset: () => {
+    const { geminiKey } = get();
+    set({ ingredients: [], selectedStyle: null, recipes: [], selectedRecipe: null, isLoading: false, error: null, geminiKey });
+  },
+}));
